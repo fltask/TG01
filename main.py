@@ -4,6 +4,7 @@ import asyncio
 from aiogram import Bot, Dispatcher
 from aiogram.filters import CommandStart, Command
 from aiogram.types import Message, BotCommand
+from aiogram.client.default import DefaultBotProperties
 import requests
 import sys
 
@@ -19,7 +20,7 @@ if not TOKEN:
     raise ValueError("TELEGRAM_BOT_TOKEN не найден в переменных окружения")
 
 # Инициализация бота и диспетчера
-bot = Bot(token=TOKEN)
+bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode="HTML"))
 dp = Dispatcher()
 
 def get_weather(city):
@@ -29,7 +30,9 @@ def get_weather(city):
 
 @dp.message(CommandStart())
 async def start_command(message: Message):
-    await message.answer("Привет! Я бот, который может показать тебе погоду в любом городе!\n\nИспользуйте: /weather Город")
+    await message.answer("🌤️ <b>Привет! Я бот погоды!</b>\n\n"
+                        "Я могу показать тебе погоду в любом городе мира!\n\n"
+                        "🌍 <b>Используйте:</b> /weather Город")
 
 @dp.message(Command("weather"))
 async def weather_command(message: Message):
@@ -46,7 +49,9 @@ async def weather_command(message: Message):
 
 @dp.message(Command("help"))
 async def help_command(message: Message):
-    await message.answer("К сожалению, я бот, который только может показать тебе погоду в любом городе\n\nИспользуйте: /weather Город")
+    await message.answer("🌤️ <b>Я бот погоды!</b>\n\n"
+                        "К сожалению, я умею только показывать погоду в любом городе мира.\n\n"
+                        "🌍 <b>Используйте:</b> /weather Город")
 
 async def get_weather_info(message: Message, city: str):
     weather = get_weather(city)
@@ -55,16 +60,40 @@ async def get_weather_info(message: Message, city: str):
         description = weather['weather'][0]['description']
         humidity = weather['main']['humidity']
         wind = weather['wind']['speed']
-        await message.answer(f"Погода в городе {city.capitalize()}:\n"
-           f"{description.capitalize()}\n"
-           f"Температура: {temp}°C\n"
-           f"Влажность: {humidity}%\n"
-           f"Ветер: {wind} м/с\n\n")
+        # Определяем эмодзи для погоды
+        weather_emoji = {
+            'ясно': '☀️',
+            'облачно': '☁️',
+            'пасмурно': '⛅',
+            'дождь': '🌧️',
+            'снег': '❄️',
+            'туман': '🌫️',
+            'гроза': '⛈️',
+            'clear': '☀️',
+            'clouds': '☁️',
+            'rain': '🌧️',
+            'snow': '❄️',
+            'mist': '🌫️',
+            'thunderstorm': '⛈️'
+        }
+        
+        # Получаем эмодзи для текущей погоды
+        emoji = weather_emoji.get(description.lower(), '🌤️')
+        
+        await message.answer(f"🌍 <b>Погода в городе {city.capitalize()}</b>\n\n"
+           f"{emoji} <b>{description.capitalize()}</b>\n"
+           f"🌡️ <b>Температура:</b> {temp}°C\n"
+           f"💧 <b>Влажность:</b> {humidity}%\n"
+           f"💨 <b>Ветер:</b> {wind} м/с\n\n")
+
     elif weather.get('cod') == 404:
-        await message.answer(f"Город '{city.capitalize()}' не найден. Проверьте правильность написания.\n\nИспользуйте: /weather Город")
+        await message.answer(f"❌ <b>Город '{city.capitalize()}' не найден!</b>\n\n"
+                            "Проверьте правильность написания названия города.\n\n"
+                            "🌍 <b>Используйте:</b> /weather Город")
     else:
         error_message = weather.get('message', 'Неизвестная ошибка')
-        await message.answer(f"Ошибка: {error_message}\n\nИспользуйте: /weather Город")
+        await message.answer(f"❌ <b>Ошибка:</b> {error_message}\n\n"
+                            "🌍 <b>Используйте:</b> /weather Город")
 
 @dp.message()
 async def handle_message(message: Message):
@@ -76,7 +105,9 @@ async def handle_message(message: Message):
     if not message.text.strip():
         return
     
-    await message.answer("К сожалению, я бот, который только может показать тебе погоду в любом городе\n\nИспользуйте: /weather Город")
+    await message.answer("🌤️ <b>Я бот погоды!</b>\n\n"
+                        "К сожалению, я умею только показывать погоду в любом городе мира.\n\n"
+                        "🌍 <b>Используйте:</b> /weather Город")
 
 @dp.startup()
 async def on_startup(bot: Bot):
